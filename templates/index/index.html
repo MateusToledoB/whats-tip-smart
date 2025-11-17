@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TIP</title>
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/index.css' %}">
+</head>
+<link rel="icon" type="image/png" sizes="45X45" href="{% static 'tip_logo.png' %}">
+
+<body>
+<!-- Modal / Popup Criar instancia-->
+<div id="popup-overlay" class="popup-overlay" style="display:none;">
+  <div class="popup">
+    <span class="close-popup" onclick="fecharPopup()">×</span>
+    <h2>Criar Nova Instância</h2>
+    <form id="instancia-form">
+
+        <input type="text" name="nome_instancia" placeholder="Nome"
+            required maxlength="30"
+            pattern="[A-Za-z_]{1,30}"
+            oninput="this.value = this.value.replace(/[^A-Za-z_]/g, '')">
+
+        
+         <input type="text" name="numero_instancia" placeholder="Número"
+           required maxlength="11"
+           pattern="[0-9]{1,11}"
+           oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+
+
+        <button type="submit" id="criar-btn">Criar</button>
+
+
+    </form>
+  </div>
+</div>
+
+<!-- Modal / Popup QR Code -->
+<div id="popup-qr-overlay" class="popup-overlay" style="display:none;">
+  <div class="popup">
+    <span class="close-popup" onclick="fecharPopupQR()">×</span>
+    <h2>Leia o QR Code para conectar</h2>
+    <div id="qr-code-container" style="text-align:center; margin-top:20px;">
+      <!-- QR code vai aparecer aqui -->
+    </div>
+    <div id="aviso-conexao">
+      <p>Em caso de problemas de conexão atualize o seu aplicativo Whatsapp.</p>
+    </div> 
+  </div>
+</div>
+
+<!-- Modal / Popup Upload -->
+<div id="popup-upload-overlay" class="popup-overlay" style="display:none;">
+  <div class="popup">
+    <span class="close-popup" onclick="fecharPopupUpload()">×</span>
+    <h2>Envio de Mensagens</h2>
+    
+    <!-- Frase de instrução -->
+    <p class="info-text">⚠️ A coluna de Números deve ter o nome <strong>"Numero"</strong></p>
+    
+    <form id="upload-form" enctype="multipart/form-data">
+      <label>Anexe a planilha (.xlsx) que contém os números a serem enviados:</label>
+      <input type="file" name="baseNumeros" accept=".xlsx" required>
+
+      <label>Mensagem:</label>
+      <textarea name="mensagem" rows="4" placeholder="Digite sua mensagem..."></textarea>
+
+      <label>Arquivo a ser enviado (Opcional):</label>
+      <input type="file" name="arquivoEnvio">
+
+      <input type="hidden" name="instanciaName" id="input-instancia-name">
+      <input type="hidden" name="c" id="input-instancia-number">
+      <input type="hidden" name="instanciaID" id="input-instancia-id">
+
+      <button type="submit" id="enviar-btn">Enviar</button>
+    </form>
+  </div>
+</div>
+
+
+<nav class="menu-lateral">
+  <h2><a href="{% url 'index' %}">Menu</a></h2>
+  <ul>
+    <li><a href="{% url 'historico' %}">Histórico</a></li>
+    <li><a href="{% url 'logout' %}">Sair</a></li>
+  </ul>
+</nav>
+
+<main class="conteudo-principal">
+<div class="area-conteudo">
+  <div class="content-wrapper">
+    <div class="parte-cima">
+      <div>
+        <h3>Usuário: {{ name_user }}.</h3>
+        <button class="botao-criar-instancia">Criar nova instância</button>
+      </div>
+      <div>
+        <p>O usuário é responsável pelo conteúdo e pelas informações enviadas por meio desta plataforma, garantindo que estejam em conformidade com a Lei Geral de Proteção de Dados (LGPD). O uso dos dados deve respeitar a privacidade e as normas legais vigentes.</p>
+      </div>
+    </div>
+    <div class="parte-baixo">
+      <table id="tabela-instancias" border="1" cellspacing="0" cellpadding="5">
+      <thead>
+        <tr>
+          <th onclick="sortTable(0)">Nome ⇅</th>
+          <th onclick="sortTable(1)">Número ⇅</th>
+          <th onclick="sortTable(2)">Status ⇅</th>
+          <th onclick="sortTable(3)">Envios Certos ⇅</th>
+          <th onclick="sortTable(4)">Envios Errados ⇅</th>
+          <th onclick="sortTable(5)">Total ⇅</th>
+          <th>Excluir</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Linhas serão inseridas dinamicamente aqui -->
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+  <footer>
+    <p>&copy; 2025. Todos os direitos reservados ao setor de Inovação e Projeto.</p>
+  </footer>
+</main>
+
+<script>
+  // Variáveis para controlar abortos de requisições pendentes
+  let criarAbortController = null;
+  let qrAbortController = null;
+
+  const botaoCriar = document.querySelector('.botao-criar-instancia');
+  const overlay = document.getElementById('popup-overlay');
+
+  botaoCriar.addEventListener('click', () => {
+    overlay.style.display = 'flex';
+  });
+
+  // Função para pegar valor de cookie
+  function getCookieValue(name) {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      let [key, val] = cookie.trim().split('=');
+      if (key === name) return val;
+    }
+    return null;
+  }
+
+  // Função para carregar as instancias daquele user_id
+  async function carregarInstancias() {
+    const tbody = document.querySelector("#tabela-instancias tbody");
+    tbody.innerHTML = ""; // limpa a tabela
+
+    try {
+      const id_user = getCookieValue("id_user");
+
+      const response = await fetch("/instancias_utils/buscar/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id_user: id_user })
+      });
+
+      if (!response.ok) throw new Error("Erro ao carregar instâncias");
+
+      const instancias = await response.json();
+
+      const statusMap = {
+      open: { text: "Conectado", class: "status-conectado", abrirUpload: true },
+      close: { text: "Desconectada", class: "status-desconectada", abrirQR: true},
+      connecting: { text: "Ativa", class: "status-ativa", abrirQR: true },
+      disconnected: { text: "Desconectada", class: "status-desconectada" },
+      qr: { text: "Aguardando QR", class: "status-aguardandoqr" },
+      Enviando: { text: "Enviando...", class: "status-Enviando" },
+      timeout: { text: "Desconectada Inatividade", class: "status-desconectada" },
+      notLogged: { text: "Instância não autenticada no WhatsApp", class: "status-erro" },
+      browserClose: { text: "Erro no browser", class: "status-erro" },
+      deviceNotConnected: { text: "Celular não está respondendo", class: "status-erro" },
+      deleted: { text: "Sessão removida do servidor ou celular", class: "status-erro" },
+      logout: { text: "Deslogada manualmente ou remotamente", class: "status-erro" }
+    };
+
+
+    instancias.forEach((instancia) => {
+      const tr = document.createElement("tr");
+
+      const statusInfo = statusMap[instancia.connectionStatus] || {
+        text: instancia.connectionStatus || "Desconhecido",
+        class: "status-desconhecido"
+      };
+
+      let statusButton = "";
+
+      if (statusInfo.abrirQR) {
+        statusButton = `<button class="${statusInfo.class}" onclick="abrirPopupQR('${instancia.name.trim()}')">${statusInfo.text}</button>`;
+      } else if (statusInfo.abrirUpload) {
+        statusButton = `<button class="${statusInfo.class}" onclick="abrirPopupUpload('${encodeURIComponent(instancia.name.trim())}', '${encodeURIComponent(instancia.number)}', '${encodeURIComponent(instancia.id)}')">${statusInfo.text}</button>`;
+      } else {
+        statusButton = `<button class="${statusInfo.class}" disabled>${statusInfo.text}</button>`;
+      }
+
+      tr.innerHTML = `
+        <td>${instancia.name}</td>
+        <td>${instancia.number}</td>
+        <td>${statusButton}</td>
+        <td>${instancia.envios_certos}</td>  
+        <td>${instancia.envios_errados}</td>  
+        <td>${instancia.envios_certos + instancia.envios_errados}</td>
+        <td><button class="btn-excluir" onclick="excluirInstancia('${instancia.name.trim()}')">Excluir</button></td>
+      `;
+
+      tbody.appendChild(tr);
+      resetSortIcons();
+    });
+
+    } catch (error) {
+      console.error(error);
+      tbody.innerHTML = "<tr><td colspan='8'>Erro ao carregar as instâncias</td></tr>";
+    }
+  }
+
+  // Função que fecha o popup de criar instância e aborta requisição pendente
+function fecharPopup() {
+  overlay.style.display = 'none';
+
+  // Limpa o formulário
+  const form = document.getElementById('instancia-form');
+  form.reset();
+
+  // Reativa o botão
+  const botao = document.getElementById("criar-btn");
+  botao.disabled = false;
+  botao.innerText = "Criar";
+
+  // Aborta requisição se estiver ativa
+  if (criarAbortController) {
+    criarAbortController.abort();
+    criarAbortController = null;
+  }
+}
+
+
+ // Função para criar a instância com controle de abort
+async function criarInstancia(form) {
+  const botao = document.getElementById("criar-btn");
+  botao.disabled = true;
+  botao.innerText = "Criando...";
+
+  // Aborta requisição anterior (se existir)
+  if (criarAbortController) criarAbortController.abort();
+  criarAbortController = new AbortController();
+
+  const id_user = getCookieValue("id_user");
+  const nome = form.nome_instancia.value.trim();
+  const numero = form.numero_instancia.value;
+
+  try {
+    const response = await fetch("/instancias_utils/criar/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nome_instancia: nome,
+        numero_instancia: numero,
+        id_user: id_user
+      }),
+      signal: criarAbortController.signal
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      fecharPopup();
+      alert("Instância criada com sucesso!");
+      carregarInstancias();
+    } else {
+      // Exibe erro retornado do backend
+      alert(data.erro || "Erro ao criar a instância.");
+      botao.disabled = false;
+      botao.innerText = "Criar";
+    }
+  } catch (error) {
+    if (error.name === "AbortError") {
+      console.log("Requisição de criação abortada.");
+    } else {
+      console.error("Erro na requisição:", error);
+      alert("Erro na criação da instância.");
+      botao.disabled = false;
+      botao.innerText = "Criar";
+    }
+  }
+}
+
+
+  // Substitui o listener antigo para usar criarInstancia com abort
+  document.getElementById("instancia-form").addEventListener("submit", async function(event) {
+    event.preventDefault();
+    await criarInstancia(event.target);
+  });
+
+
+  // Função para excluir instância
+  async function excluirInstancia(name_instancia) {
+    if (!confirm("Quer mesmo excluir essa instância?")) return;
+
+    try {
+      const response = await fetch("/instancias_utils/delete/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name_instancia: name_instancia,
+          id_user: getCookieValue("id_user") }),
+      });
+
+      if (response.ok) {
+        alert("Instância excluída com sucesso");
+        carregarInstancias();
+      } else {
+        const data = await response.json();
+        alert(data.error || "Erro ao excluir a instância");
+      }
+    } catch (error) {
+      alert("Erro na requisição");
+      console.error(error);
+    }
+  }
+
+  // Função que abre o popup do QR code com abort controller
+  async function abrirPopupQR(nome_instancia) {
+    const overlayQR = document.getElementById('popup-qr-overlay');
+    const container = document.getElementById('qr-code-container');
+    const id_user = getCookieValue("id_user");
+    container.innerHTML = "Carregando QR Code...";
+    overlayQR.style.display = 'flex';
+
+    // Aborta requisição anterior se existir
+    if (qrAbortController) qrAbortController.abort();
+    qrAbortController = new AbortController();
+
+    try {
+      const response = await fetch(`/instancias_utils/gerar_qr_code/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_user, name_instancia: nome_instancia }),
+        signal: qrAbortController.signal
+      });
+
+      if (!response.ok) throw new Error("Erro ao obter QR code. Por favor feche e tente novamente");
+
+      const data = await response.json();
+
+      if (data.base64) {
+        container.innerHTML = `<img src="${data.base64}" alt="QR Code" style="max-width: 100%; height: auto;" />`;
+      } else {
+        container.textContent = "QR code não disponível. Por favor feche e tente novamente";
+      }
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.log('Requisição de QR Code abortada');
+      } else {
+        container.textContent = "Erro ao carregar QR code.";
+        console.error(error);
+      }
+    }
+  }
+
+  // Função que fecha popup QR e aborta requisição
+  function fecharPopupQR() {
+    const overlayQR = document.getElementById('popup-qr-overlay');
+    overlayQR.style.display = 'none';
+
+    if (qrAbortController) {
+      qrAbortController.abort();
+      qrAbortController = null;
+    }
+
+    carregarInstancias();
+  }
+
+function abrirPopupUpload(nomeInstancia, numeroInstancia, idInstancia) {
+  console.log("Instância:", nomeInstancia, numeroInstancia, idInstancia);
+
+  // Preenche os campos hidden no formulário
+  const form = document.querySelector('#upload-form');
+
+  const campoNome = form.querySelector('input[name="instanciaName"]');
+  const campoNumero = form.querySelector('input[name="c"]');
+  const campoId = form.querySelector('input[name="instanciaID"]');
+
+
+  if (campoNome) campoNome.value = nomeInstancia;
+  if (campoNumero) campoNumero.value = numeroInstancia;
+  if (campoId) campoId.value = idInstancia;
+
+  // Exibe o popup
+  document.getElementById('popup-upload-overlay').style.display = 'flex';
+}
+
+
+function fecharPopupUpload() {
+  const form = document.querySelector('#upload-form');
+
+  // Oculta o popup
+  document.getElementById("popup-upload-overlay").style.display = "none";
+
+  // Limpa o formulário
+  if (form) {
+    form.reset();
+
+    // Também limpa manualmente campos hidden ou outros campos que não são resetados
+    const hiddenFields = ['instanciaName', 'instanciaID', 'c'];
+    hiddenFields.forEach(name => {
+      const field = form.querySelector(`input[name="${name}"]`);
+      if (field) field.value = '';
+    });
+  }
+}
+// Fetch Envio de mensagens 
+document.getElementById('upload-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+
+  const form = event.target;
+  const botaoEnviar = form.querySelector('button[type="submit"]');
+  
+  // Desativa o botão imediatamente
+  botaoEnviar.disabled = true;
+
+  const nomeInstancia   = document.getElementById('input-instancia-name').value;
+  const instanciaID     = document.getElementById('input-instancia-id').value;
+  const numeroInstancia = document.getElementById('input-instancia-number').value;
+  const id_user         = getCookieValue("id_user");
+
+  const intanciaNamebanco = `id_user:${id_user}__ ${nomeInstancia}`;
+
+  // Atualiza os campos hidden
+  document.getElementById('input-instancia-id').value = instanciaID;
+  document.getElementById('input-instancia-number').value = numeroInstancia;
+  document.getElementById('input-instancia-name').value = nomeInstancia;
+
+  const formData = new FormData(form);
+
+  const mensagem     = formData.get('mensagem');
+  const arquivoEnvio = formData.get('arquivoEnvio');
+
+  if (!mensagem && (!arquivoEnvio || !arquivoEnvio.name)) {
+    alert("Por favor, envie uma mensagem ou um arquivo.");
+    botaoEnviar.disabled = false;
+    return;
+  }
+
+  formData.set('instanciaName', intanciaNamebanco);
+  formData.append('instanciaID', instanciaID);
+  formData.append('numeroInstancia', numeroInstancia);
+  formData.append('id_user', id_user);
+
+  try {
+    const response = await fetch('/instancias_utils/loop_envio/', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      alert(data.sucesso || "Envio iniciado com sucesso.");
+      fecharPopupUpload();
+      carregarInstancias();
+    } else {
+      alert(data.erro || "Erro ao iniciar o envio.");
+
+    }
+
+  } catch (error) {
+    alert("Erro inesperado na requisição: " + error.message);
+    
+  }finally{
+    botaoEnviar.disabled = false;
+  }
+});
+
+// Função para classificar a tabela de instâncias
+function sortTable(colIndex) {
+  const table = document.getElementById("tabela-instancias");
+  const tbody = table.tBodies[0];
+  const rows = Array.from(tbody.rows);
+
+  const isNumeric = !isNaN(rows[0].cells[colIndex].innerText.replace(",", "."));
+  let asc = table.getAttribute("data-sort-col") != colIndex || table.getAttribute("data-sort-order") !== "asc";
+
+  // Ordena linhas
+  rows.sort((a, b) => {
+    let aText = a.cells[colIndex].innerText.trim();
+    let bText = b.cells[colIndex].innerText.trim();
+    if (isNumeric) {
+      aText = parseFloat(aText.replace(",", ".")) || 0;
+      bText = parseFloat(bText.replace(",", ".")) || 0;
+    }
+    return asc ? (aText > bText ? 1 : -1) : (aText < bText ? 1 : -1);
+  });
+
+  // Reanexa linhas na ordem correta
+  rows.forEach(row => tbody.appendChild(row));
+
+  // Salva estado de ordenação
+  table.setAttribute("data-sort-col", colIndex);
+  table.setAttribute("data-sort-order", asc ? "asc" : "desc");
+
+  // Atualiza os ícones
+  const ths = table.tHead.rows[0].cells;
+  for (let i = 0; i < ths.length; i++) {
+    if (i < ths.length - 1) { // ignora a coluna Excluir
+      // reseta todas para o padrão ⇅
+      ths[i].innerHTML = ths[i].innerHTML.replace(/ ▲| ▼| ⇅/g, "") + " ⇅";
+    }
+  }
+  // Altera apenas o ícone da coluna clicada
+  ths[colIndex].innerHTML = ths[colIndex].innerHTML.replace("⇅", asc ? "▲" : "▼");
+}
+
+// Função que reseta os icones da tabela 
+function resetSortIcons() {
+  const ths = document.querySelectorAll("#tabela-instancias thead th");
+  ths.forEach((th, index) => {
+    if (index < ths.length - 1) { // ignora a coluna "Excluir"
+      th.innerHTML = th.textContent.replace(/ ▲| ▼| ⇅/g, "") + " ⇅";
+    }
+  });
+}
+
+
+  // Carrega as instâncias ao abrir a página
+  window.onload = carregarInstancias;
+</script>
+
+</body>
+</html>

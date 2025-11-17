@@ -1,0 +1,176 @@
+/* Reset básico */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Menu lateral */
+nav.menu-lateral {
+  background-color: #2c3641;
+  width: 200px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.menu-link {
+  color: white;
+  text-decoration: none;
+}
+
+.menu-link:hover {
+  text-decoration: underline;
+}
+
+/* Conteúdo principal */
+main.conteudo-principal {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* total da viewport para alinhar com footer */
+}
+
+.area-conteudo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  /* Remove padding daqui para controlar no wrapper */
+}
+
+
+.parte-baixo {
+  background-color: white;
+  border-radius: 12px;
+  border: 1.5px solid rgba(44, 54, 65, 0.3);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Centralizar título e dar um espacinho abaixo */
+.parte-baixo > h2 {
+  text-align: center;
+  margin-bottom: 15px;
+  font-weight: bold;
+}
+
+/* Faz a tabela ocupar todo o espaço e deixar a rolagem só nela */
+#tabela-instancias {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  flex-grow: 1;
+  overflow-y: auto; /* pra barra de rolagem vertical */
+  display: block; /* necessário para overflow funcionar no table */
+}
+
+/* Coloca a área do corpo da tabela com rolagem */
+#tabela-instancias tbody {
+  display: block;
+  max-height: 450px; /* limite de altura para a rolagem */
+  overflow-y: auto;
+  width: 100%;
+}
+
+/* Cabeçalho fixo */
+#tabela-instancias thead, 
+#tabela-instancias tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+/* Cabeçalho estilizado */
+#tabela-instancias thead tr {
+  background-color: #2c3641;
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* Células */
+#tabela-instancias th, 
+#tabela-instancias td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+  word-wrap: break-word;
+  vertical-align: middle;
+}
+
+/* Linhas alternadas */
+#tabela-instancias tbody tr:nth-child(odd) {
+  background-color: #f9f9f9;
+}
+
+/* Hover nas linhas */
+#tabela-instancias tbody tr:hover {
+  background-color: #e1eaff;
+  cursor: pointer;
+}
+
+
+
+/* Footer fixo */
+footer {
+  background-color: #2c3641;
+  color: white;
+  text-align: center;
+  padding: 15px;
+  height: 50px;
+  flex-shrink: 0;
+}
+
+
+.menu-lateral {
+  background-color: #1a1a1a; /* fundo escuro */
+  padding: 15px 20px;
+  width: 180px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: white;
+}
+
+.menu-lateral h2 a {
+  color: white;
+  text-decoration: none;
+  font-size: 24px; /* fonte maior pro título */
+  font-weight: 700;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.menu-lateral ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.menu-lateral ul li {
+  margin-bottom: 6px; /* menor espaço entre itens */
+}
+
+.menu-lateral ul li a {
+  color: white;
+  font-size: 18px; /* fonte maior pros links */
+  text-decoration: none;
+  padding: 6px 0;
+  display: block;
+  transition: color 0.3s ease;
+}
+

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TIP</title>
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/historico.css' %}">
+</head>
+<link rel="icon" type="image/png" sizes="45X45" href="{% static 'tip_logo.png' %}">
+
+<body>
+<nav class="menu-lateral">
+  <h2><a href="{% url 'index' %}">Menu</a></h2>
+  <ul>
+    <li><a href="{% url 'historico' %}">Histórico</a></li>
+    <li><a href="{% url 'logout' %}">Sair</a></li>
+  </ul>
+</nav>
+
+<main class="conteudo-principal">
+<div class="area-conteudo">
+    <div class="area-conteudo">
+  <div class="parte-baixo">
+    <h2 style="margin-bottom: 15px;">Instâncias Encerradas</h2>
+    <table id="tabela-instancias">
+      <thead>
+        <tr>
+          <th>Nome da Instância</th>
+          <th>Número</th>
+          <th>Mensagem</th>
+          <th>Enviados com Sucesso</th>
+          <th>Erros</th>
+          <th>Total</th>
+          <th>Status</th>
+          <th>Criada em</th>
+          <th>Encerrada em</th>
+        </tr>
+      </thead>
+      <tbody id="tabela-encerradas-body">
+        <!-- Linhas serão inseridas aqui via JavaScript -->
+      </tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+  <footer>
+    <p>&copy; 2025. Todos os direitos reservados ao setor de Inovação e Projeto.</p>
+  </footer>
+</main>
+
+<script>
+  function limitarTexto(texto, limite) {
+  if (!texto) return "";
+  return texto.length > limite ? texto.substring(0, limite) + "..." : texto;
+}
+
+  async function carregarInstanciasEncerradas() {
+    try {
+      const id_user = getCookieValue("id_user"); // Pega o id_user do cookie
+      if (!id_user) {
+        console.error('Usuário não autenticado (id_user não encontrado)');
+        return;
+      }
+
+      // Monta a URL com query param id_user
+      const url = `/instancias/?id_user=${encodeURIComponent(id_user)}`;
+
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          // Se usar token, adiciona aqui: 'Authorization': 'Token xxxxxxx'
+        }
+      });
+
+      if (!response.ok) throw new Error('Erro ao buscar instâncias');
+
+      const dados = await response.json();
+
+      const tbody = document.getElementById('tabela-encerradas-body');
+      tbody.innerHTML = ''; // limpa tabela antes
+
+      dados.forEach(instancia => {
+        const tr = document.createElement('tr');
+        let cor = instancia.status === "Conexão interrompida" ? "red" : "black";
+        tr.innerHTML = `
+          <td>${instancia.nome_instancia}</td>
+          <td>${instancia.numero_instancia}</td>
+          <td>${limitarTexto(instancia.mensagem_instancia, 30)}</td>
+          <td>${instancia.envios_sucesso}</td>
+          <td>${instancia.envios_erro}</td>
+          <td>${instancia.total_envios}</td>
+          <td style="color: ${cor};">${instancia.status}</td>
+          <td>${new Date(instancia.criada_em).toLocaleString()}</td>
+          <td>${new Date(instancia.encerrada_em).toLocaleString()}</td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+
+    } catch (error) {
+      console.error('Erro ao carregar instâncias:', error);
+    }
+  }
+
+  // Chama a função para carregar ao carregar a página
+  window.addEventListener('DOMContentLoaded', carregarInstanciasEncerradas);
+
+  // Função para pegar cookie pelo nome
+  function getCookieValue(name) {
+    const cookies = document.cookie.split('; ');
+    for (const cookie of cookies) {
+      const [key, value] = cookie.split('=');
+      if (key === name) return decodeURIComponent(value);
+    }
+    return null;
+  }
+</script>
+
+
+</body>
+</html>

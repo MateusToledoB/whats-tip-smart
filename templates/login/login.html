@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>TIP</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+    <link rel="icon" type="image/png" sizes="45X45" href="{% static 'tip_logo.png' %}">
+</head>
+<body>
+    
+    <div class="login-container">
+    <div class="loginUser">
+        <h1>Login</h1>
+        <form id="loginForm">
+            {% csrf_token %}
+            <input type="text" name="user_login" placeholder="Usuário" required>
+            <input type="password" name="user_password" placeholder="Senha" required>
+            <button type="submit">Entrar</button>
+        </form>
+    </div>
+
+    <a class="botao-acesso" 
+        href="https://app.smartsheet.com/b/form/71798edadea9405c9e0b8bb5b2e05831" 
+        target="_blank">
+        Solicitar Acesso
+    </a>
+    </div>
+
+</body>
+<script>
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    e.preventDefault(); // impede o envio tradicional
+
+    const formData = new FormData(this);
+    const response = await fetch('/login/autenticate/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        },
+        body: formData
+    });
+
+    if (response.ok) {
+        // Redireciona se sucesso
+        window.location.href = '/index/';
+    } else {
+        const data = await response.json();
+        alert(data.error || 'Erro no login.');
+    }
+});
+</script>
+</html>
