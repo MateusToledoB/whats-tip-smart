@@ -1,4 +1,5 @@
 from django import db
+from instancias_utils.services.message_builder_service import MessageBuilderService
 from instancias.models import AuthUsuarios, InstanciaAtiva , InstanciaEncerrada
 from instancias_utils.services import (
     EvolutionService,
@@ -23,6 +24,7 @@ class MainService():
             )
 
         instancia_encerrada = False  # flag de controle
+        message_builder = MessageBuilderService()
 
         try:
             for _, row in df_base.iterrows():
@@ -58,7 +60,21 @@ class MainService():
 
                     response_msg = None
                     response_arquivo = None
-                    mensagem_personalizada = UtilsService.substituir_variaveis(mensagem, row) if mensagem else None
+                    dados_linha = row.dropna().to_dict()
+                    mensagem_personalizada = None
+
+                    if mensagem:
+                        try:
+                            mensagem_personalizada = message_builder.gerar_mensagem(
+                                prompt_usuario=mensagem,   # agora é PROMPT
+                                dados_linha=dados_linha
+                            )
+                        except Exception as e:
+                            print(f"Erro ao gerar mensagem GPT: {e}")
+                            instancia_obj.envios_erro += 1
+                            instancia_obj.save()
+                            continue
+
 
                     match (bool(mensagem), bool(arquivo_bytes)):
                         case (True, False):

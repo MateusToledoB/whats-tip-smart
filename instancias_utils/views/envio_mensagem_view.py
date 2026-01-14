@@ -39,7 +39,7 @@ class EnvioMensagem(APIView):
         delays = []
 
         limite_envio_inicio = 8  # 8h começa o limite
-        limite_envio_fim = 18    # 18h é o limite para envio
+        limite_envio_fim = 23   # 18h é o limite para envio
 
         max_envios_inicio = 600
         decremento_por_bloco = 50
@@ -59,7 +59,7 @@ class EnvioMensagem(APIView):
             if limite_atual < 0:
                 limite_atual = 0
 
-        if total_linhas > limite_atual:
+        if total_linhas > 900:
             return Response({'erro': f'Erro: limite atual é {limite_atual} números, você pediu {total_linhas}'}, status=400)
 
         if total_linhas <= 100:
