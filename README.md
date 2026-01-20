@@ -2,6 +2,8 @@
 
 Este sistema utiliza o Evolution API para gerenciamento e envio massivo de mensagens via WhatsApp, oferecendo uma interface amigável e robusta para gerenciar múltiplas instâncias do WhatsApp de forma automatizada.
 
+> **⚡ Integração com ChatGPT**: Esta versão do projeto integra o ChatGPT para aprimorar o envio de mensagens, permitindo a geração inteligente e personalização automática de conteúdo antes de enviar as mensagens via WhatsApp.
+
 ## 🚀 Tecnologias Utilizadas
 
 - **Python 3.x**
@@ -14,6 +16,7 @@ Este sistema utiliza o Evolution API para gerenciamento e envio massivo de mensa
 - **WhiteNoise 6.9.0** - Para servir arquivos estáticos
 - **python-dotenv** - Para gerenciamento de variáveis de ambiente
 - **Evolution API** - API para integração com WhatsApp
+- **OpenAI/ChatGPT** - Para processamento inteligente e personalização de mensagens
 
 ## 📁 Estrutura do Projeto
 
@@ -57,6 +60,17 @@ Gerenciamento de usuários do sistema, incluindo:
 - Autenticação
 - Autorização
 - Perfis de usuário
+
+## 🤖 Integração com ChatGPT
+
+A partir desta versão, o projeto incorpora ChatGPT para aprimorar significativamente o envio de mensagens:
+
+- **Geração de Conteúdo Inteligente**: O ChatGPT é utilizado para gerar ou otimizar mensagens automaticamente antes do envio
+- **Personalização de Mensagens**: Adapta dinamicamente o conteúdo das mensagens com base em parâmetros e contexto
+- **Serviço GPT**: Implementado em `instancias_utils/services/gpt_service.py` para fácil integração e extensão
+- **Envio Automatizado**: As mensagens processadas pelo ChatGPT são enviadas automaticamente via WhatsApp através do Evolution API
+
+Esta integração permite criar campanhas de mensagens mais personalizadas e relevantes, mantendo a automatização em larga escala.
 
 ## 💻 Como Executar o Projeto
 

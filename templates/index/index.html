@@ -6,6 +6,7 @@
 <title>TIP</title>
 {% load static %}
 <link rel="stylesheet" href="{% static 'css/index.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <link rel="icon" type="image/png" sizes="45X45" href="{% static 'tip_logo.png' %}">
 
@@ -63,8 +64,16 @@
       <label>Anexe a planilha (.xlsx) que contém os números a serem enviados:</label>
       <input type="file" name="baseNumeros" accept=".xlsx" required>
 
-      <label>Mensagem:</label>
-      <textarea name="mensagem" rows="4" placeholder="Digite sua mensagem..."></textarea>
+      <div class="ai-container">
+          <div class="ai-header-label">
+              <i class="fas fa-sparkles ai-icon"></i>
+              <label>Assistente de Mensagens IA</label>
+          </div>
+          <div class="textarea-wrapper">
+              <textarea name="mensagem" rows="4" placeholder="Como posso ajudar com sua mensagem?"></textarea>
+              <div class="ai-glow-effect"></div>
+          </div>
+      </div>
 
       <label>Arquivo a ser enviado (Opcional):</label>
       <input type="file" name="arquivoEnvio">
