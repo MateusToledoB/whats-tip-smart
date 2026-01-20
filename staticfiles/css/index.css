@@ -496,7 +496,7 @@ button {
 
 .textarea-wrapper:focus-within {
     box-shadow: 0 0 20px rgba(124, 77, 255, 0.4);
-    transition: 0.3s ease;
+    transition: 0.4s ease;
 }
 
 /* Animação do Ícone */
